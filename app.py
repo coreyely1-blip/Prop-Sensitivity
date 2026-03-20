@@ -5,6 +5,8 @@ Wraps the existing prediction engine with a JSON API.
 """
 import threading
 
+import traceback
+
 from flask import Flask, jsonify, request, send_from_directory
 
 from config.settings import CURRENT_SEASON, PROP_CATEGORIES
@@ -13,6 +15,14 @@ from models.predictor import PlayerPropsPredictor
 from nba_api.stats.static import players, teams
 
 app = Flask(__name__, static_folder="static")
+
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Return JSON instead of HTML for all errors."""
+    traceback.print_exc()
+    return jsonify({"error": str(e)}), 500
+
 
 # Simple in-memory cache for trained predictors to avoid retraining
 _predictor_cache: dict[int, PlayerPropsPredictor] = {}
