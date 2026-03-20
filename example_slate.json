@@ -1,0 +1,26 @@
+[
+  {
+    "player": "LeBron James",
+    "opponent": "BOS",
+    "home": true,
+    "teammates_out": [],
+    "opponents_out": [],
+    "lines": {"PTS": 25.5, "REB": 7.5, "AST": 7.5, "FG3M": 2.5}
+  },
+  {
+    "player": "Jayson Tatum",
+    "opponent": "LAL",
+    "home": false,
+    "teammates_out": ["Derrick White"],
+    "opponents_out": ["Anthony Davis"],
+    "lines": {"PTS": 27.5, "REB": 8.5, "AST": 4.5}
+  },
+  {
+    "player": "Luka Doncic",
+    "opponent": "MIL",
+    "home": true,
+    "teammates_out": [],
+    "opponents_out": [],
+    "lines": {"PTS": 30.5, "REB": 9.5, "AST": 8.5, "PTS+REB+AST": 48.5}
+  }
+]
