@@ -59,7 +59,7 @@ def find_player(name: str) -> dict | None:
 
 def find_team(name: str) -> dict | None:
     """Return the nba_api team dict for *name* (abbreviation, city, or nickname)."""
-    for fn in (teams.find_teams_by_abbreviation,
+    for fn in (teams.find_team_by_abbreviation,
                teams.find_teams_by_city,
                teams.find_teams_by_nickname,
                teams.find_teams_by_full_name):
