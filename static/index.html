@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Props Model</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #232340;
+      --accent: #e94560;
+      --accent2: #0f3460;
+      --text: #eee;
+      --text-dim: #8888a0;
+      --green: #00c853;
+      --red: #ff1744;
+      --gold: #ffd600;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(135deg, var(--surface) 0%, var(--accent2) 100%);
+      padding: 20px 24px;
+      text-align: center;
+      border-bottom: 2px solid var(--accent);
+    }
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 1px; }
+    header p { color: var(--text-dim); font-size: 0.85rem; margin-top: 4px; }
+
+    /* Main container */
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    /* Form elements */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      margin-top: 12px;
+    }
+    label:first-child { margin-top: 0; }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface2);
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    input::placeholder { color: #555; }
+
+    /* Autocomplete dropdown */
+    .autocomplete-wrapper { position: relative; }
+    .autocomplete-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--surface2);
+      border: 1px solid #444;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10;
+      display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .autocomplete-item:hover, .autocomplete-item.active {
+      background: var(--accent2);
+    }
+
+    /* Venue toggle */
+    .venue-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .venue-btn {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid #333;
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .venue-btn.selected {
+      border-color: var(--accent);
+      color: var(--text);
+      background: rgba(233, 69, 96, 0.15);
+    }
+
+    /* Tag inputs for injuries */
+    .tag-input-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 10px;
+      background: var(--surface2);
+      border: 1px solid #333;
+      border-radius: 8px;
+      min-height: 44px;
+      align-items: center;
+      cursor: text;
+    }
+    .tag-input-wrapper:focus-within { border-color: var(--accent); }
+    .tag {
+      background: var(--accent2);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag .remove {
+      cursor: pointer;
+      opacity: 0.7;
+      font-size: 1rem;
+      line-height: 1;
+    }
+    .tag .remove:hover { opacity: 1; }
+    .tag-input {
+      border: none !important;
+      background: transparent !important;
+      padding: 4px !important;
+      flex: 1;
+      min-width: 100px;
+      font-size: 0.9rem;
+    }
+
+    /* Lines grid */
+    .lines-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .line-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .line-item span {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      min-width: 80px;
+    }
+    .line-item input {
+      width: 90px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    /* Submit button */
+    .btn-predict {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent) 0%, #c0392b 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: opacity 0.2s;
+      margin-top: 8px;
+    }
+    .btn-predict:hover { opacity: 0.9; }
+    .btn-predict:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      display: none;
+    }
+    .loading.show { display: block; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #333;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { color: var(--text-dim); font-size: 0.9rem; }
+
+    /* Results */
+    #results { display: none; }
+    #results.show { display: block; }
+
+    .result-header {
+      text-align: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #333;
+      margin-bottom: 16px;
+    }
+    .result-header h3 { font-size: 1.2rem; }
+    .result-header .matchup-info {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* Props table */
+    .props-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .props-table th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding: 8px 6px;
+      border-bottom: 1px solid #333;
+    }
+    .props-table th:not(:first-child) { text-align: right; }
+    .props-table td {
+      padding: 10px 6px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .props-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+    .props-table td.prop-name { font-weight: 600; }
+    .props-table td.prediction { color: var(--gold); font-weight: 700; font-size: 1.05rem; }
+    .range { color: var(--text-dim); font-size: 0.85rem; }
+
+    /* Edge analysis */
+    .edge-card { margin-top: 16px; }
+    .edge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .edge-row:last-child { border-bottom: none; }
+    .edge-prop { font-weight: 600; min-width: 80px; }
+    .edge-values { display: flex; gap: 16px; align-items: center; font-size: 0.9rem; }
+    .edge-line { color: var(--text-dim); }
+    .edge-direction {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    .edge-direction.OVER { background: rgba(0,200,83,0.2); color: var(--green); }
+    .edge-direction.UNDER { background: rgba(255,23,68,0.2); color: var(--red); }
+    .edge-pct { font-weight: 700; min-width: 60px; text-align: right; }
+    .edge-pct.positive { color: var(--green); }
+    .edge-pct.negative { color: var(--red); }
+    .conf-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .conf-badge.HIGH { background: rgba(0,200,83,0.25); color: var(--green); }
+    .conf-badge.MEDIUM { background: rgba(255,214,0,0.2); color: var(--gold); }
+    .conf-badge.LOW { background: rgba(136,136,160,0.2); color: var(--text-dim); }
+
+    /* Reset button */
+    .btn-reset {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 2px solid #444;
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .btn-reset:hover { border-color: var(--text-dim); color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      .lines-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>NBA PROPS MODEL</h1>
+  <p>Ensemble ML predictions with edge detection</p>
+</header>
+
+<div class="container">
+
+  <!-- Input Form -->
+  <div id="form-section">
+    <div class="card">
+      <h2>Player &amp; Matchup</h2>
+
+      <label for="player-input">Player Name</label>
+      <div class="autocomplete-wrapper">
+        <input type="text" id="player-input" placeholder="e.g. LeBron James" autocomplete="off">
+        <div class="autocomplete-list" id="player-dropdown"></div>
+      </div>
+
+      <label for="opponent-select">Opponent</label>
+      <select id="opponent-select">
+        <option value="">Select team...</option>
+      </select>
+
+      <label>Venue</label>
+      <div class="venue-toggle">
+        <div class="venue-btn selected" data-venue="home" onclick="selectVenue('home')">HOME</div>
+        <div class="venue-btn" data-venue="away" onclick="selectVenue('away')">AWAY</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Injuries (optional)</h2>
+
+      <label>Teammates Out</label>
+      <div class="tag-input-wrapper" onclick="this.querySelector('input').focus()">
+        <div id="teammates-tags"></div>
+        <input type="text" class="tag-input" id="teammates-input" placeholder="Type name, press Enter">
+      </div>
+
+      <label>Opponents Out</label>
+      <div class="tag-input-wrapper" onclick="this.querySelector('input').focus()">
+        <div id="opponents-tags"></div>
+        <input type="text" class="tag-input" id="opponents-input" placeholder="Type name, press Enter">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sportsbook Lines (optional)</h2>
+      <p style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 12px;">
+        Enter lines to find edges. Leave blank to skip.
+      </p>
+      <div class="lines-grid" id="lines-grid"></div>
+    </div>
+
+    <button class="btn-predict" id="predict-btn" onclick="runPrediction()">
+      GET PREDICTIONS
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Training model &amp; generating predictions...</p>
+    <p style="margin-top: 6px; font-size: 0.8rem; color: #555;">First run takes ~30s while data loads</p>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="card">
+      <div class="result-header">
+        <h3 id="result-player"></h3>
+        <div class="matchup-info" id="result-matchup"></div>
+      </div>
+      <table class="props-table">
+        <thead>
+          <tr>
+            <th>Prop</th>
+            <th>Prediction</th>
+            <th>Range</th>
+            <th>Spread</th>
+          </tr>
+        </thead>
+        <tbody id="props-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="card edge-card" id="edges-card" style="display:none;">
+      <h2>Edge Analysis</h2>
+      <div id="edges-container"></div>
+    </div>
+
+    <button class="btn-reset" onclick="resetForm()">NEW PREDICTION</button>
+  </div>
+
+</div>
+
+<script>
+// ── State ──
+let selectedPlayer = null;
+let isHome = true;
+let teammatesOut = [];
+let opponentsOut = [];
+const LINE_PROPS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'FG3M', 'PTS+REB', 'PTS+AST', 'PTS+REB+AST', 'STL+BLK'];
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  loadTeams();
+  buildLinesGrid();
+  setupAutocomplete();
+  setupTagInputs();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+});
+
+// ── Teams dropdown ──
+async function loadTeams() {
+  const res = await fetch('/api/teams');
+  const teams = await res.json();
+  const sel = document.getElementById('opponent-select');
+  teams.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.abbreviation;
+    opt.textContent = `${t.abbreviation} — ${t.name}`;
+    sel.appendChild(opt);
+  });
+}
+
+// ── Player autocomplete ──
+let searchTimeout = null;
+function setupAutocomplete() {
+  const input = document.getElementById('player-input');
+  const dropdown = document.getElementById('player-dropdown');
+
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    const q = input.value.trim();
+    if (q.length < 2) { dropdown.classList.remove('open'); return; }
+    searchTimeout = setTimeout(async () => {
+      const res = await fetch(`/api/search/players?q=${encodeURIComponent(q)}`);
+      const players = await res.json();
+      dropdown.innerHTML = '';
+      if (players.length === 0) { dropdown.classList.remove('open'); return; }
+      players.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'autocomplete-item';
+        div.textContent = p.name;
+        div.onclick = () => {
+          selectedPlayer = p;
+          input.value = p.name;
+          dropdown.classList.remove('open');
+        };
+        dropdown.appendChild(div);
+      });
+      dropdown.classList.add('open');
+    }, 300);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.autocomplete-wrapper')) dropdown.classList.remove('open');
+  });
+}
+
+// ── Venue toggle ──
+function selectVenue(v) {
+  isHome = v === 'home';
+  document.querySelectorAll('.venue-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.venue === v);
+  });
+}
+
+// ── Tag inputs (injuries) ──
+function setupTagInputs() {
+  setupSingleTag('teammates-input', 'teammates-tags', teammatesOut);
+  setupSingleTag('opponents-input', 'opponents-tags', opponentsOut);
+}
+
+function setupSingleTag(inputId, containerId, arr) {
+  const input = document.getElementById(inputId);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      e.preventDefault();
+      const name = input.value.trim();
+      arr.push(name);
+      input.value = '';
+      renderTags(containerId, arr);
+    }
+    if (e.key === 'Backspace' && !input.value && arr.length > 0) {
+      arr.pop();
+      renderTags(containerId, arr);
+    }
+  });
+}
+
+function renderTags(containerId, arr) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = arr.map((name, i) =>
+    `<div class="tag">${name}<span class="remove" onclick="removeTag('${containerId}', ${i})">×</span></div>`
+  ).join('');
+}
+
+function removeTag(containerId, idx) {
+  const arr = containerId === 'teammates-tags' ? teammatesOut : opponentsOut;
+  arr.splice(idx, 1);
+  renderTags(containerId, arr);
+}
+
+// ── Lines grid ──
+function buildLinesGrid() {
+  const grid = document.getElementById('lines-grid');
+  LINE_PROPS.forEach(prop => {
+    const div = document.createElement('div');
+    div.className = 'line-item';
+    div.innerHTML = `<span>${prop}</span><input type="number" step="0.5" id="line-${prop}" placeholder="—">`;
+    grid.appendChild(div);
+  });
+}
+
+// ── Run prediction ──
+async function runPrediction() {
+  const playerName = document.getElementById('player-input').value.trim();
+  const opponent = document.getElementById('opponent-select').value;
+
+  if (!playerName) { alert('Please enter a player name.'); return; }
+  if (!opponent) { alert('Please select an opponent.'); return; }
+
+  // Collect lines
+  const lines = {};
+  LINE_PROPS.forEach(prop => {
+    const val = document.getElementById(`line-${prop}`).value;
+    if (val) lines[prop] = parseFloat(val);
+  });
+
+  const body = {
+    player: playerName,
+    opponent: opponent,
+    home: isHome,
+    teammates_out: [...teammatesOut],
+    opponents_out: [...opponentsOut],
+    lines: lines,
+  };
+
+  // Show loading
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+
+  try {
+    const res = await fetch('/api/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert(err.error || 'Something went wrong');
+      resetForm();
+      return;
+    }
+
+    const data = await res.json();
+    displayResults(data);
+  } catch (e) {
+    alert('Network error: ' + e.message);
+    resetForm();
+  }
+}
+
+// ── Display results ──
+function displayResults(data) {
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('results').classList.add('show');
+
+  document.getElementById('result-player').textContent = data.player;
+  document.getElementById('result-matchup').textContent =
+    `vs ${data.opponent_abbrev} · ${data.home ? 'HOME' : 'AWAY'}`;
+
+  // Props table
+  const tbody = document.getElementById('props-tbody');
+  tbody.innerHTML = '';
+  data.predictions.forEach(p => {
+    if (p.error) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="prop-name">${p.prop}</td>
+      <td class="prediction">${p.prediction.toFixed(1)}</td>
+      <td class="range">${p.low.toFixed(1)} – ${p.high.toFixed(1)}</td>
+      <td class="range">${p.model_spread.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Edges
+  const edgesCard = document.getElementById('edges-card');
+  const edgesContainer = document.getElementById('edges-container');
+  if (data.edges && data.edges.length > 0) {
+    edgesCard.style.display = 'block';
+    edgesContainer.innerHTML = '';
+    data.edges.forEach(e => {
+      const pctClass = e.edge > 0 ? 'positive' : 'negative';
+      const div = document.createElement('div');
+      div.className = 'edge-row';
+      div.innerHTML = `
+        <span class="edge-prop">${e.prop}</span>
+        <div class="edge-values">
+          <span class="edge-line">Line: ${e.line.toFixed(1)}</span>
+          <span class="edge-direction ${e.direction}">${e.direction}</span>
+          <span class="edge-pct ${pctClass}">${e.edge_pct > 0 ? '+' : ''}${e.edge_pct.toFixed(1)}%</span>
+          <span class="conf-badge ${e.confidence}">${e.confidence}</span>
+        </div>
+      `;
+      edgesContainer.appendChild(div);
+    });
+  } else {
+    edgesCard.style.display = 'none';
+  }
+}
+
+// ── Reset ──
+function resetForm() {
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('edges-card').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
