@@ -25,7 +25,6 @@
   .btn-secondary:hover { background: #1a4a8a; }
   .btn-danger { background: #6b2020; color: #e0e0e0; }
   .btn-danger:hover { background: #8b2020; }
-  .btn-small { display: inline-block; width: auto; padding: 4px 10px; font-size: 11px; }
   .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .presets-grid .btn { font-size: 11px; padding: 6px 4px; }
 
@@ -49,9 +48,6 @@
   /* Info bar */
   #info-bar { height: 28px; background: #16213e; border-top: 1px solid #0f3460; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #888; gap: 16px; }
   #info-bar span { white-space: nowrap; }
-
-  /* Measurement overlay */
-  .measure-label { position: absolute; background: rgba(233,69,96,0.9); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; pointer-events: none; white-space: nowrap; z-index: 10; }
 
   /* Color swatches */
   .color-swatches { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -141,7 +137,7 @@
       </div>
     </div>
     <button class="btn btn-secondary" onclick="applySelection()">Apply Changes</button>
-    <button class="btn btn-secondary" onclick="rotateSelected()">Rotate 90°</button>
+    <button class="btn btn-secondary" onclick="rotateSelected()">Rotate 90&deg;</button>
     <button class="btn btn-secondary" onclick="duplicateSelected()">Duplicate</button>
     <button class="btn btn-danger" onclick="deleteSelected()">Delete</button>
   </div>
@@ -161,7 +157,7 @@
     <button onclick="toggleLabels()" id="labels-btn">Labels: ON</button>
     <span class="sep"></span>
     <button onclick="zoomIn()">Zoom +</button>
-    <button onclick="zoomOut()">Zoom −</button>
+    <button onclick="zoomOut()">Zoom &minus;</button>
     <button onclick="zoomFit()">Fit</button>
     <span class="sep"></span>
     <button onclick="clearAll()">Clear All</button>
@@ -202,13 +198,13 @@ let currentColor = COLORS[0];
 
 // Init color swatches
 const swatchWrap = document.getElementById('color-swatches');
-COLORS.forEach(c => {
+COLORS.forEach(function(c) {
   const el = document.createElement('div');
   el.className = 'color-swatch' + (c === currentColor ? ' active' : '');
   el.style.background = c;
-  el.onclick = () => {
+  el.onclick = function() {
     currentColor = c;
-    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
     el.classList.add('active');
   };
   swatchWrap.appendChild(el);
@@ -228,14 +224,13 @@ function yToFt(py) { return (py - offsetY) / pxPerFt; }
 
 function snapFt(val) {
   if (!snapOn) return val;
-  return Math.round(val * 4) / 4; // snap to 0.25 ft (3 inches)
+  return Math.round(val * 4) / 4;
 }
 
 function draw() {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  // Background
   ctx.fillStyle = '#1a1a2e';
   ctx.fillRect(0, 0, W, H);
 
@@ -290,24 +285,21 @@ function draw() {
   ctx.fillText(scaleBarFt + ' ft', sbx + scaleBarPx / 2, sby + 16);
 
   // Shapes
-  shapes.forEach(s => {
+  shapes.forEach(function(s) {
     const sx = ftToX(s.x), sy = ftToY(s.y);
     const sw = s.w * pxPerFt, sh = s.h * pxPerFt;
 
-    // Fill
     ctx.globalAlpha = 0.3;
     ctx.fillStyle = s.color;
     ctx.fillRect(sx, sy, sw, sh);
     ctx.globalAlpha = 1;
 
-    // Border
     ctx.strokeStyle = s.color;
     ctx.lineWidth = s.id === selectedId ? 2.5 : 1.5;
     ctx.setLineDash(s.id === selectedId ? [6, 3] : []);
     ctx.strokeRect(sx, sy, sw, sh);
     ctx.setLineDash([]);
 
-    // Labels
     if (showLabels && pxPerFt >= 15) {
       ctx.fillStyle = '#fff';
       ctx.font = 'bold 11px system-ui';
@@ -317,16 +309,14 @@ function draw() {
       ctx.fillText(s.name, cx, cy - 7);
       ctx.font = '10px system-ui';
       ctx.fillStyle = '#ccc';
-      ctx.fillText(s.w + '×' + s.h + ' ft', cx, cy + 7);
+      ctx.fillText(s.w + '\u00d7' + s.h + ' ft', cx, cy + 7);
     }
 
-    // Selection handles
     if (s.id === selectedId) {
       const hSize = 6;
       ctx.fillStyle = '#e94560';
-      // corners
-      [[sx, sy],[sx+sw, sy],[sx, sy+sh],[sx+sw, sy+sh]].forEach(([hx,hy]) => {
-        ctx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+      [[sx, sy],[sx+sw, sy],[sx, sy+sh],[sx+sw, sy+sh]].forEach(function(p) {
+        ctx.fillRect(p[0] - hSize/2, p[1] - hSize/2, hSize, hSize);
       });
     }
   });
@@ -350,32 +340,24 @@ function draw() {
     ctx.textAlign = 'center';
     ctx.fillText(dist.toFixed(2) + ' ft', mx, my - 8);
 
-    // Show dx/dy
     if (Math.abs(dx) > 0.1 && Math.abs(dy) > 0.1) {
       ctx.font = '10px system-ui';
-      ctx.fillText('Δx:' + Math.abs(dx).toFixed(2) + '  Δy:' + Math.abs(dy).toFixed(2), mx, my + 10);
+      ctx.fillText('\u0394x:' + Math.abs(dx).toFixed(2) + '  \u0394y:' + Math.abs(dy).toFixed(2), mx, my + 10);
     }
   }
 
-  // Spacing guides for selected shape
   if (selectedId) {
     drawSpacingGuides();
   }
 }
 
 function drawSpacingGuides() {
-  const sel = shapes.find(s => s.id === selectedId);
+  const sel = shapes.find(function(s) { return s.id === selectedId; });
   if (!sel) return;
 
-  const edges = {
-    left: sel.x,
-    right: sel.x + sel.w,
-    top: sel.y,
-    bottom: sel.y + sel.h
-  };
+  const edges = { left: sel.x, right: sel.x + sel.w, top: sel.y, bottom: sel.y + sel.h };
 
-  // Distance to room walls
-  const wallDists = [
+  var wallDists = [
     { label: 'L wall', val: edges.left, x1: 0, y1: sel.y + sel.h/2, x2: edges.left, y2: sel.y + sel.h/2 },
     { label: 'R wall', val: roomW - edges.right, x1: edges.right, y1: sel.y + sel.h/2, x2: roomW, y2: sel.y + sel.h/2 },
     { label: 'T wall', val: edges.top, x1: sel.x + sel.w/2, y1: 0, x2: sel.x + sel.w/2, y2: edges.top },
@@ -389,31 +371,29 @@ function drawSpacingGuides() {
   ctx.font = '10px system-ui';
   ctx.textAlign = 'center';
 
-  wallDists.forEach(d => {
+  wallDists.forEach(function(d) {
     if (d.val > 0.01) {
-      const px1 = ftToX(d.x1), py1 = ftToY(d.y1);
-      const px2 = ftToX(d.x2), py2 = ftToY(d.y2);
+      var px1 = ftToX(d.x1), py1 = ftToY(d.y1);
+      var px2 = ftToX(d.x2), py2 = ftToY(d.y2);
       ctx.beginPath(); ctx.moveTo(px1, py1); ctx.lineTo(px2, py2); ctx.stroke();
       ctx.fillText(d.val.toFixed(1) + "'", (px1+px2)/2, (py1+py2)/2 - 5);
     }
   });
 
-  // Distance to nearest shapes
-  shapes.forEach(other => {
+  shapes.forEach(function(other) {
     if (other.id === selectedId) return;
-    // Horizontal gap
-    const hGap = getGap(sel, other);
-    const vGap = getVGap(sel, other);
+    var hGap = getGap(sel, other);
+    var vGap = getVGap(sel, other);
 
     if (hGap !== null && hGap.dist > 0 && hGap.dist < 20) {
-      const py = ftToY((Math.max(sel.y, other.y) + Math.min(sel.y+sel.h, other.y+other.h)) / 2);
-      const px1 = ftToX(hGap.x1), px2 = ftToX(hGap.x2);
+      var py = ftToY((Math.max(sel.y, other.y) + Math.min(sel.y+sel.h, other.y+other.h)) / 2);
+      var px1 = ftToX(hGap.x1), px2 = ftToX(hGap.x2);
       ctx.beginPath(); ctx.moveTo(px1, py); ctx.lineTo(px2, py); ctx.stroke();
       ctx.fillText(hGap.dist.toFixed(1) + "'", (px1+px2)/2, py - 5);
     }
     if (vGap !== null && vGap.dist > 0 && vGap.dist < 20) {
-      const px = ftToX((Math.max(sel.x, other.x) + Math.min(sel.x+sel.w, other.x+other.w)) / 2);
-      const py1 = ftToY(vGap.y1), py2 = ftToY(vGap.y2);
+      var px = ftToX((Math.max(sel.x, other.x) + Math.min(sel.x+sel.w, other.x+other.w)) / 2);
+      var py1 = ftToY(vGap.y1), py2 = ftToY(vGap.y2);
       ctx.beginPath(); ctx.moveTo(px, py1); ctx.lineTo(px, py2); ctx.stroke();
       ctx.fillText(vGap.dist.toFixed(1) + "'", px + 15, (py1+py2)/2);
     }
@@ -423,7 +403,6 @@ function drawSpacingGuides() {
 }
 
 function getGap(a, b) {
-  // Vertical overlap required
   if (a.y + a.h <= b.y || b.y + b.h <= a.y) return null;
   if (a.x + a.w <= b.x) return { dist: b.x - (a.x + a.w), x1: a.x + a.w, x2: b.x };
   if (b.x + b.w <= a.x) return { dist: a.x - (b.x + b.w), x1: b.x + b.w, x2: a.x };
@@ -439,14 +418,13 @@ function getVGap(a, b) {
 
 // Interaction
 function getMouseFt(e) {
-  const rect = canvas.getBoundingClientRect();
+  var rect = canvas.getBoundingClientRect();
   return { x: xToFt(e.clientX - rect.left), y: yToFt(e.clientY - rect.top) };
 }
 
 function hitTest(ft) {
-  // Reverse order so topmost shape is picked first
-  for (let i = shapes.length - 1; i >= 0; i--) {
-    const s = shapes[i];
+  for (var i = shapes.length - 1; i >= 0; i--) {
+    var s = shapes[i];
     if (ft.x >= s.x && ft.x <= s.x + s.w && ft.y >= s.y && ft.y <= s.y + s.h) return s;
   }
   return null;
@@ -454,23 +432,24 @@ function hitTest(ft) {
 
 function hitHandle(ft) {
   if (!selectedId) return null;
-  const s = shapes.find(sh => sh.id === selectedId);
+  var s = shapes.find(function(sh) { return sh.id === selectedId; });
   if (!s) return null;
-  const tol = 8 / pxPerFt;
-  const corners = [
+  var tol = 8 / pxPerFt;
+  var corners = [
     { cx: s.x, cy: s.y, handle: 'tl' },
     { cx: s.x + s.w, cy: s.y, handle: 'tr' },
     { cx: s.x, cy: s.y + s.h, handle: 'bl' },
     { cx: s.x + s.w, cy: s.y + s.h, handle: 'br' },
   ];
-  for (const c of corners) {
+  for (var i = 0; i < corners.length; i++) {
+    var c = corners[i];
     if (Math.abs(ft.x - c.cx) < tol && Math.abs(ft.y - c.cy) < tol) return c.handle;
   }
   return null;
 }
 
-canvas.addEventListener('mousedown', e => {
-  const ft = getMouseFt(e);
+canvas.addEventListener('mousedown', function(e) {
+  var ft = getMouseFt(e);
 
   if (currentTool === 'measure') {
     measureStart = { x: snapFt(ft.x), y: snapFt(ft.y) };
@@ -478,15 +457,14 @@ canvas.addEventListener('mousedown', e => {
     return;
   }
 
-  // Check resize handle first
-  const handle = hitHandle(ft);
+  var handle = hitHandle(ft);
   if (handle) {
-    const s = shapes.find(sh => sh.id === selectedId);
-    dragState = { type: 'resize', handle, shape: s, origX: s.x, origY: s.y, origW: s.w, origH: s.h, startFt: ft };
+    var s = shapes.find(function(sh) { return sh.id === selectedId; });
+    dragState = { type: 'resize', handle: handle, shape: s, origX: s.x, origY: s.y, origW: s.w, origH: s.h, startFt: ft };
     return;
   }
 
-  const hit = hitTest(ft);
+  var hit = hitTest(ft);
   if (hit) {
     selectShape(hit.id);
     dragState = { type: 'move', shape: hit, startFt: ft, origX: hit.x, origY: hit.y };
@@ -496,8 +474,8 @@ canvas.addEventListener('mousedown', e => {
   draw();
 });
 
-canvas.addEventListener('mousemove', e => {
-  const ft = getMouseFt(e);
+canvas.addEventListener('mousemove', function(e) {
+  var ft = getMouseFt(e);
   document.getElementById('info-cursor').textContent = 'Cursor: ' + ft.x.toFixed(1) + ', ' + ft.y.toFixed(1) + ' ft';
 
   if (currentTool === 'measure' && measureStart && e.buttons === 1) {
@@ -507,8 +485,7 @@ canvas.addEventListener('mousemove', e => {
   }
 
   if (!dragState) {
-    // Update cursor
-    const handle = hitHandle(ft);
+    var handle = hitHandle(ft);
     if (handle) {
       canvas.style.cursor = (handle === 'tl' || handle === 'br') ? 'nwse-resize' : 'nesw-resize';
     } else if (hitTest(ft)) {
@@ -519,22 +496,22 @@ canvas.addEventListener('mousemove', e => {
     return;
   }
 
-  const dx = ft.x - dragState.startFt.x;
-  const dy = ft.y - dragState.startFt.y;
+  var dx = ft.x - dragState.startFt.x;
+  var dy = ft.y - dragState.startFt.y;
 
   if (dragState.type === 'move') {
     dragState.shape.x = snapFt(dragState.origX + dx);
     dragState.shape.y = snapFt(dragState.origY + dy);
     updateSpacingInfo(dragState.shape);
   } else if (dragState.type === 'resize') {
-    const s = dragState.shape;
-    const h = dragState.handle;
-    let nx = dragState.origX, ny = dragState.origY, nw = dragState.origW, nh = dragState.origH;
+    var s = dragState.shape;
+    var h = dragState.handle;
+    var nx = dragState.origX, ny = dragState.origY, nw = dragState.origW, nh = dragState.origH;
 
-    if (h.includes('r')) { nw = Math.max(0.25, snapFt(dragState.origW + dx)); }
-    if (h.includes('l')) { nx = snapFt(dragState.origX + dx); nw = Math.max(0.25, dragState.origW - (nx - dragState.origX)); }
-    if (h.includes('b')) { nh = Math.max(0.25, snapFt(dragState.origH + dy)); }
-    if (h.includes('t')) { ny = snapFt(dragState.origY + dy); nh = Math.max(0.25, dragState.origH - (ny - dragState.origY)); }
+    if (h.indexOf('r') >= 0) { nw = Math.max(0.25, snapFt(dragState.origW + dx)); }
+    if (h.indexOf('l') >= 0) { nx = snapFt(dragState.origX + dx); nw = Math.max(0.25, dragState.origW - (nx - dragState.origX)); }
+    if (h.indexOf('b') >= 0) { nh = Math.max(0.25, snapFt(dragState.origH + dy)); }
+    if (h.indexOf('t') >= 0) { ny = snapFt(dragState.origY + dy); nh = Math.max(0.25, dragState.origH - (ny - dragState.origY)); }
 
     s.x = nx; s.y = ny; s.w = nw; s.h = nh;
   }
@@ -543,18 +520,16 @@ canvas.addEventListener('mousemove', e => {
   updateSelectionPanel();
 });
 
-canvas.addEventListener('mouseup', () => {
+canvas.addEventListener('mouseup', function() {
   dragState = null;
 });
 
-canvas.addEventListener('wheel', e => {
+canvas.addEventListener('wheel', function(e) {
   e.preventDefault();
-  const ft = getMouseFt(e);
-  const oldPx = pxPerFt;
+  var ft = getMouseFt(e);
   if (e.deltaY < 0) pxPerFt = Math.min(200, pxPerFt * 1.1);
   else pxPerFt = Math.max(5, pxPerFt / 1.1);
 
-  // Zoom toward cursor
   offsetX = e.offsetX - ft.x * pxPerFt;
   offsetY = e.offsetY - ft.y * pxPerFt;
 
@@ -563,34 +538,33 @@ canvas.addEventListener('wheel', e => {
 }, { passive: false });
 
 // Pan with middle mouse or shift+drag
-let panState = null;
-canvas.addEventListener('mousedown', e => {
+var panState = null;
+canvas.addEventListener('mousedown', function(e) {
   if (e.button === 1 || (e.button === 0 && e.shiftKey && currentTool === 'select' && !hitTest(getMouseFt(e)))) {
     e.preventDefault();
     panState = { startX: e.offsetX, startY: e.offsetY, origOX: offsetX, origOY: offsetY };
   }
 });
-canvas.addEventListener('mousemove', e => {
+canvas.addEventListener('mousemove', function(e) {
   if (panState && e.buttons) {
     offsetX = panState.origOX + (e.offsetX - panState.startX);
     offsetY = panState.origOY + (e.offsetY - panState.startY);
     draw();
   }
 });
-canvas.addEventListener('mouseup', () => { panState = null; });
+canvas.addEventListener('mouseup', function() { panState = null; });
 
 // Keyboard
-document.addEventListener('keydown', e => {
+document.addEventListener('keydown', function(e) {
   if (e.target.tagName === 'INPUT') return;
   if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
   if (e.key === 'r') rotateSelected();
   if (e.key === 'd' && e.ctrlKey) { e.preventDefault(); duplicateSelected(); }
   if (e.key === 'Escape') { selectShape(null); measureStart = null; measureEnd = null; draw(); }
-  // Arrow nudge
-  if (selectedId && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+  if (selectedId && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].indexOf(e.key) >= 0) {
     e.preventDefault();
-    const s = shapes.find(sh => sh.id === selectedId);
-    const step = e.shiftKey ? 1 : 0.25;
+    var s = shapes.find(function(sh) { return sh.id === selectedId; });
+    var step = e.shiftKey ? 1 : 0.25;
     if (e.key === 'ArrowLeft') s.x -= step;
     if (e.key === 'ArrowRight') s.x += step;
     if (e.key === 'ArrowUp') s.y -= step;
@@ -602,10 +576,10 @@ document.addEventListener('keydown', e => {
 
 // Functions
 function addShape() {
-  const name = document.getElementById('shape-name').value || 'Shape';
-  const w = parseFloat(document.getElementById('shape-w').value) || 2;
-  const h = parseFloat(document.getElementById('shape-h').value) || 2;
-  const shape = { id: nextId++, name, w, h, x: 1, y: 1, color: currentColor };
+  var name = document.getElementById('shape-name').value || 'Shape';
+  var w = parseFloat(document.getElementById('shape-w').value) || 2;
+  var h = parseFloat(document.getElementById('shape-h').value) || 2;
+  var shape = { id: nextId++, name: name, w: w, h: h, x: 1, y: 1, color: currentColor };
   shapes.push(shape);
   selectShape(shape.id);
   updateShapeList();
@@ -613,7 +587,7 @@ function addShape() {
 }
 
 function addPreset(name, w, h) {
-  const shape = { id: nextId++, name, w, h, x: 1, y: 1, color: currentColor };
+  var shape = { id: nextId++, name: name, w: w, h: h, x: 1, y: 1, color: currentColor };
   shapes.push(shape);
   selectShape(shape.id);
   updateShapeList();
@@ -622,7 +596,7 @@ function addPreset(name, w, h) {
 
 function selectShape(id) {
   selectedId = id;
-  const panel = document.getElementById('selection-panel');
+  var panel = document.getElementById('selection-panel');
   if (id) {
     panel.style.display = '';
     updateSelectionPanel();
@@ -634,7 +608,7 @@ function selectShape(id) {
 }
 
 function updateSelectionPanel() {
-  const s = shapes.find(sh => sh.id === selectedId);
+  var s = shapes.find(function(sh) { return sh.id === selectedId; });
   if (!s) return;
   document.getElementById('sel-name').value = s.name;
   document.getElementById('sel-w').value = s.w;
@@ -644,7 +618,7 @@ function updateSelectionPanel() {
 }
 
 function applySelection() {
-  const s = shapes.find(sh => sh.id === selectedId);
+  var s = shapes.find(function(sh) { return sh.id === selectedId; });
   if (!s) return;
   s.name = document.getElementById('sel-name').value;
   s.w = parseFloat(document.getElementById('sel-w').value) || s.w;
@@ -656,18 +630,18 @@ function applySelection() {
 }
 
 function rotateSelected() {
-  const s = shapes.find(sh => sh.id === selectedId);
+  var s = shapes.find(function(sh) { return sh.id === selectedId; });
   if (!s) return;
-  const tmp = s.w; s.w = s.h; s.h = tmp;
+  var tmp = s.w; s.w = s.h; s.h = tmp;
   updateSelectionPanel();
   updateShapeList();
   draw();
 }
 
 function duplicateSelected() {
-  const s = shapes.find(sh => sh.id === selectedId);
+  var s = shapes.find(function(sh) { return sh.id === selectedId; });
   if (!s) return;
-  const dup = { ...s, id: nextId++, x: s.x + 0.5, y: s.y + 0.5 };
+  var dup = { id: nextId++, name: s.name, w: s.w, h: s.h, x: s.x + 0.5, y: s.y + 0.5, color: s.color };
   shapes.push(dup);
   selectShape(dup.id);
   updateShapeList();
@@ -676,7 +650,7 @@ function duplicateSelected() {
 
 function deleteSelected() {
   if (!selectedId) return;
-  shapes = shapes.filter(s => s.id !== selectedId);
+  shapes = shapes.filter(function(s) { return s.id !== selectedId; });
   selectShape(null);
   updateShapeList();
   draw();
@@ -710,9 +684,9 @@ function toggleLabels() {
 function zoomIn() { pxPerFt = Math.min(200, pxPerFt * 1.3); document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt/50*100) + '%'; draw(); }
 function zoomOut() { pxPerFt = Math.max(5, pxPerFt / 1.3); document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt/50*100) + '%'; draw(); }
 function zoomFit() {
-  const padPx = 80;
-  const availW = canvas.width - padPx * 2;
-  const availH = canvas.height - padPx * 2;
+  var padPx = 80;
+  var availW = canvas.width - padPx * 2;
+  var availH = canvas.height - padPx * 2;
   pxPerFt = Math.min(availW / roomW, availH / roomH);
   offsetX = (canvas.width - roomW * pxPerFt) / 2;
   offsetY = (canvas.height - roomH * pxPerFt) / 2;
@@ -729,32 +703,31 @@ function clearAll() {
 }
 
 function exportImage() {
-  // Draw at current state, then export
-  const link = document.createElement('a');
+  var link = document.createElement('a');
   link.download = 'blueprint.png';
   link.href = canvas.toDataURL();
   link.click();
 }
 
 function updateShapeList() {
-  const list = document.getElementById('shape-list');
+  var list = document.getElementById('shape-list');
   list.innerHTML = '';
-  shapes.forEach(s => {
-    const el = document.createElement('div');
+  shapes.forEach(function(s) {
+    var el = document.createElement('div');
     el.className = 'shape-item' + (s.id === selectedId ? ' selected' : '');
-    el.innerHTML = `<div><span class="name" style="color:${s.color}">${s.name}</span> <span class="dims">${s.w}×${s.h} ft</span></div>`;
-    el.onclick = () => { selectShape(s.id); draw(); };
+    el.innerHTML = '<div><span class="name" style="color:' + s.color + '">' + s.name + '</span> <span class="dims">' + s.w + '\u00d7' + s.h + ' ft</span></div>';
+    el.onclick = function() { selectShape(s.id); draw(); };
     list.appendChild(el);
   });
 }
 
 function updateSpacingInfo(s) {
-  const left = s.x.toFixed(1);
-  const right = (roomW - s.x - s.w).toFixed(1);
-  const top = s.y.toFixed(1);
-  const bottom = (roomH - s.y - s.h).toFixed(1);
+  var left = s.x.toFixed(1);
+  var right = (roomW - s.x - s.w).toFixed(1);
+  var top = s.y.toFixed(1);
+  var bottom = (roomH - s.y - s.h).toFixed(1);
   document.getElementById('info-spacing').textContent =
-    `Spacing — L:${left}' R:${right}' T:${top}' B:${bottom}'`;
+    "Spacing \u2014 L:" + left + "' R:" + right + "' T:" + top + "' B:" + bottom + "'";
 }
 
 // Init
