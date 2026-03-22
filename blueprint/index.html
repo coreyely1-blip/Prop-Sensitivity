@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Blueprint Designer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 280px; background: #16213e; border-right: 1px solid #0f3460; display: flex; flex-direction: column; flex-shrink: 0; }
+  #sidebar h1 { font-size: 16px; padding: 16px; border-bottom: 1px solid #0f3460; color: #e94560; letter-spacing: 1px; }
+  .panel { padding: 12px 16px; border-bottom: 1px solid #0f3460; }
+  .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+  .panel label { display: block; font-size: 12px; margin-bottom: 4px; color: #aaa; }
+  .panel input, .panel select { width: 100%; padding: 6px 8px; background: #1a1a2e; border: 1px solid #0f3460; color: #e0e0e0; border-radius: 4px; font-size: 13px; margin-bottom: 8px; }
+  .panel input:focus, .panel select:focus { outline: none; border-color: #e94560; }
+  .row { display: flex; gap: 8px; }
+  .row > div { flex: 1; }
+  .btn { display: block; width: 100%; padding: 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-bottom: 6px; transition: background 0.15s; }
+  .btn-primary { background: #e94560; color: #fff; }
+  .btn-primary:hover { background: #c73e54; }
+  .btn-secondary { background: #0f3460; color: #e0e0e0; }
+  .btn-secondary:hover { background: #1a4a8a; }
+  .btn-danger { background: #6b2020; color: #e0e0e0; }
+  .btn-danger:hover { background: #8b2020; }
+  .btn-small { display: inline-block; width: auto; padding: 4px 10px; font-size: 11px; }
+  .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .presets-grid .btn { font-size: 11px; padding: 6px 4px; }
+
+  /* Shape list */
+  #shape-list { flex: 1; overflow-y: auto; padding: 8px 16px; }
+  .shape-item { padding: 8px; background: #1a1a2e; border: 1px solid #0f3460; border-radius: 4px; margin-bottom: 4px; font-size: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .shape-item:hover, .shape-item.selected { border-color: #e94560; }
+  .shape-item .name { font-weight: 600; }
+  .shape-item .dims { color: #888; font-size: 11px; }
+
+  /* Canvas area */
+  #canvas-area { flex: 1; display: flex; flex-direction: column; position: relative; }
+  #toolbar { height: 40px; background: #16213e; border-bottom: 1px solid #0f3460; display: flex; align-items: center; padding: 0 12px; gap: 8px; font-size: 12px; }
+  #toolbar .sep { width: 1px; height: 20px; background: #0f3460; }
+  #toolbar button { background: #0f3460; border: none; color: #e0e0e0; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+  #toolbar button:hover { background: #1a4a8a; }
+  #toolbar button.active { background: #e94560; }
+  #canvas-wrap { flex: 1; position: relative; overflow: hidden; cursor: default; }
+  canvas { position: absolute; top: 0; left: 0; }
+
+  /* Info bar */
+  #info-bar { height: 28px; background: #16213e; border-top: 1px solid #0f3460; display: flex; align-items: center; padding: 0 12px; font-size: 11px; color: #888; gap: 16px; }
+  #info-bar span { white-space: nowrap; }
+
+  /* Measurement overlay */
+  .measure-label { position: absolute; background: rgba(233,69,96,0.9); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; pointer-events: none; white-space: nowrap; z-index: 10; }
+
+  /* Color swatches */
+  .color-swatches { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+  .color-swatch { width: 24px; height: 24px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; }
+  .color-swatch:hover, .color-swatch.active { border-color: #fff; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1>BLUEPRINT DESIGNER</h1>
+
+  <div class="panel">
+    <h3>Room Setup</h3>
+    <div class="row">
+      <div>
+        <label>Width (ft)</label>
+        <input type="number" id="room-w" value="15" min="1" max="100" step="0.5">
+      </div>
+      <div>
+        <label>Depth (ft)</label>
+        <input type="number" id="room-h" value="12" min="1" max="100" step="0.5">
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="applyRoom()">Apply Room Size</button>
+  </div>
+
+  <div class="panel">
+    <h3>Add Shape</h3>
+    <label>Name</label>
+    <input type="text" id="shape-name" value="Desk" placeholder="e.g. Desk">
+    <div class="row">
+      <div>
+        <label>Width (ft)</label>
+        <input type="number" id="shape-w" value="5" min="0.25" max="50" step="0.25">
+      </div>
+      <div>
+        <label>Depth (ft)</label>
+        <input type="number" id="shape-h" value="2.5" min="0.25" max="50" step="0.25">
+      </div>
+    </div>
+    <label>Color</label>
+    <div class="color-swatches" id="color-swatches"></div>
+    <button class="btn btn-primary" onclick="addShape()">Add Shape</button>
+  </div>
+
+  <div class="panel">
+    <h3>Furniture Presets</h3>
+    <div class="presets-grid">
+      <button class="btn btn-secondary" onclick="addPreset('Desk',5,2.5)">Desk</button>
+      <button class="btn btn-secondary" onclick="addPreset('Chair',2,2)">Chair</button>
+      <button class="btn btn-secondary" onclick="addPreset('Bookshelf',3,1)">Bookshelf</button>
+      <button class="btn btn-secondary" onclick="addPreset('Couch',7,3)">Couch</button>
+      <button class="btn btn-secondary" onclick="addPreset('Filing Cabinet',1.5,2)">File Cabinet</button>
+      <button class="btn btn-secondary" onclick="addPreset('Monitor',2,0.75)">Monitor</button>
+      <button class="btn btn-secondary" onclick="addPreset('Table',4,3)">Table</button>
+      <button class="btn btn-secondary" onclick="addPreset('Rug',6,4)">Rug</button>
+      <button class="btn btn-secondary" onclick="addPreset('Plant',1,1)">Plant</button>
+      <button class="btn btn-secondary" onclick="addPreset('Lamp',1,1)">Lamp</button>
+      <button class="btn btn-secondary" onclick="addPreset('Door',3,0.5)">Door</button>
+      <button class="btn btn-secondary" onclick="addPreset('Window',4,0.5)">Window</button>
+    </div>
+  </div>
+
+  <div class="panel" id="selection-panel" style="display:none;">
+    <h3>Selected Shape</h3>
+    <label>Name</label>
+    <input type="text" id="sel-name">
+    <div class="row">
+      <div>
+        <label>Width (ft)</label>
+        <input type="number" id="sel-w" min="0.25" step="0.25">
+      </div>
+      <div>
+        <label>Depth (ft)</label>
+        <input type="number" id="sel-h" min="0.25" step="0.25">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>X (ft)</label>
+        <input type="number" id="sel-x" step="0.25">
+      </div>
+      <div>
+        <label>Y (ft)</label>
+        <input type="number" id="sel-y" step="0.25">
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="applySelection()">Apply Changes</button>
+    <button class="btn btn-secondary" onclick="rotateSelected()">Rotate 90°</button>
+    <button class="btn btn-secondary" onclick="duplicateSelected()">Duplicate</button>
+    <button class="btn btn-danger" onclick="deleteSelected()">Delete</button>
+  </div>
+
+  <div style="padding: 8px 16px;">
+    <h3 style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Shapes</h3>
+  </div>
+  <div id="shape-list"></div>
+</div>
+
+<div id="canvas-area">
+  <div id="toolbar">
+    <button id="tool-select" class="active" onclick="setTool('select')">Select</button>
+    <button id="tool-measure" onclick="setTool('measure')">Measure</button>
+    <span class="sep"></span>
+    <button onclick="toggleSnap()" id="snap-btn">Snap: ON</button>
+    <button onclick="toggleLabels()" id="labels-btn">Labels: ON</button>
+    <span class="sep"></span>
+    <button onclick="zoomIn()">Zoom +</button>
+    <button onclick="zoomOut()">Zoom −</button>
+    <button onclick="zoomFit()">Fit</button>
+    <span class="sep"></span>
+    <button onclick="clearAll()">Clear All</button>
+    <button onclick="exportImage()">Export PNG</button>
+  </div>
+  <div id="canvas-wrap">
+    <canvas id="canvas"></canvas>
+  </div>
+  <div id="info-bar">
+    <span id="info-cursor">Cursor: 0, 0 ft</span>
+    <span id="info-zoom">Zoom: 100%</span>
+    <span id="info-scale">Scale: 1 grid = 1 ft</span>
+    <span id="info-spacing"></span>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('canvas-wrap');
+
+// State
+let roomW = 15, roomH = 12;
+let shapes = [];
+let selectedId = null;
+let pxPerFt = 50;
+let offsetX = 40, offsetY = 40;
+let snapOn = true;
+let showLabels = true;
+let currentTool = 'select';
+let dragState = null;
+let measureStart = null;
+let measureEnd = null;
+let nextId = 1;
+
+const COLORS = ['#e94560','#4e9ae9','#4ecdc4','#f7b731','#a55eea','#26de81','#fd9644','#fc5c65','#45aaf2','#778ca3'];
+let currentColor = COLORS[0];
+
+// Init color swatches
+const swatchWrap = document.getElementById('color-swatches');
+COLORS.forEach(c => {
+  const el = document.createElement('div');
+  el.className = 'color-swatch' + (c === currentColor ? ' active' : '');
+  el.style.background = c;
+  el.onclick = () => {
+    currentColor = c;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+  };
+  swatchWrap.appendChild(el);
+});
+
+function resize() {
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  draw();
+}
+window.addEventListener('resize', resize);
+
+function ftToX(ft) { return offsetX + ft * pxPerFt; }
+function ftToY(ft) { return offsetY + ft * pxPerFt; }
+function xToFt(px) { return (px - offsetX) / pxPerFt; }
+function yToFt(py) { return (py - offsetY) / pxPerFt; }
+
+function snapFt(val) {
+  if (!snapOn) return val;
+  return Math.round(val * 4) / 4; // snap to 0.25 ft (3 inches)
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = '#1a1a2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  const gridSizeFt = pxPerFt >= 30 ? 1 : (pxPerFt >= 15 ? 2 : 5);
+  ctx.strokeStyle = '#252545';
+  ctx.lineWidth = 0.5;
+  const startXft = Math.floor(xToFt(0) / gridSizeFt) * gridSizeFt;
+  const endXft = Math.ceil(xToFt(W) / gridSizeFt) * gridSizeFt;
+  const startYft = Math.floor(yToFt(0) / gridSizeFt) * gridSizeFt;
+  const endYft = Math.ceil(yToFt(H) / gridSizeFt) * gridSizeFt;
+
+  for (let x = startXft; x <= endXft; x += gridSizeFt) {
+    const px = ftToX(x);
+    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+  }
+  for (let y = startYft; y <= endYft; y += gridSizeFt) {
+    const py = ftToY(y);
+    ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke();
+  }
+
+  // Room outline
+  ctx.strokeStyle = '#e0e0e0';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([]);
+  const rx = ftToX(0), ry = ftToY(0);
+  const rw = roomW * pxPerFt, rh = roomH * pxPerFt;
+  ctx.strokeRect(rx, ry, rw, rh);
+
+  // Room dimensions
+  ctx.fillStyle = '#888';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(roomW + ' ft', rx + rw / 2, ry - 8);
+  ctx.save();
+  ctx.translate(rx - 8, ry + rh / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(roomH + ' ft', 0, 0);
+  ctx.restore();
+
+  // Scale bar
+  const scaleBarFt = Math.max(1, Math.floor(100 / pxPerFt));
+  const scaleBarPx = scaleBarFt * pxPerFt;
+  const sbx = W - 20 - scaleBarPx, sby = H - 40;
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(sbx, sby); ctx.lineTo(sbx + scaleBarPx, sby); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sbx, sby - 4); ctx.lineTo(sbx, sby + 4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(sbx + scaleBarPx, sby - 4); ctx.lineTo(sbx + scaleBarPx, sby + 4); ctx.stroke();
+  ctx.fillStyle = '#888';
+  ctx.textAlign = 'center';
+  ctx.fillText(scaleBarFt + ' ft', sbx + scaleBarPx / 2, sby + 16);
+
+  // Shapes
+  shapes.forEach(s => {
+    const sx = ftToX(s.x), sy = ftToY(s.y);
+    const sw = s.w * pxPerFt, sh = s.h * pxPerFt;
+
+    // Fill
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = s.color;
+    ctx.fillRect(sx, sy, sw, sh);
+    ctx.globalAlpha = 1;
+
+    // Border
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.id === selectedId ? 2.5 : 1.5;
+    ctx.setLineDash(s.id === selectedId ? [6, 3] : []);
+    ctx.strokeRect(sx, sy, sw, sh);
+    ctx.setLineDash([]);
+
+    // Labels
+    if (showLabels && pxPerFt >= 15) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const cx = sx + sw / 2, cy = sy + sh / 2;
+      ctx.fillText(s.name, cx, cy - 7);
+      ctx.font = '10px system-ui';
+      ctx.fillStyle = '#ccc';
+      ctx.fillText(s.w + '×' + s.h + ' ft', cx, cy + 7);
+    }
+
+    // Selection handles
+    if (s.id === selectedId) {
+      const hSize = 6;
+      ctx.fillStyle = '#e94560';
+      // corners
+      [[sx, sy],[sx+sw, sy],[sx, sy+sh],[sx+sw, sy+sh]].forEach(([hx,hy]) => {
+        ctx.fillRect(hx - hSize/2, hy - hSize/2, hSize, hSize);
+      });
+    }
+  });
+
+  // Measurement line
+  if (measureStart && measureEnd) {
+    const x1 = ftToX(measureStart.x), y1 = ftToY(measureStart.y);
+    const x2 = ftToX(measureEnd.x), y2 = ftToY(measureEnd.y);
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const dx = measureEnd.x - measureStart.x;
+    const dy = measureEnd.y - measureStart.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    ctx.fillStyle = '#e94560';
+    ctx.font = 'bold 12px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(dist.toFixed(2) + ' ft', mx, my - 8);
+
+    // Show dx/dy
+    if (Math.abs(dx) > 0.1 && Math.abs(dy) > 0.1) {
+      ctx.font = '10px system-ui';
+      ctx.fillText('Δx:' + Math.abs(dx).toFixed(2) + '  Δy:' + Math.abs(dy).toFixed(2), mx, my + 10);
+    }
+  }
+
+  // Spacing guides for selected shape
+  if (selectedId) {
+    drawSpacingGuides();
+  }
+}
+
+function drawSpacingGuides() {
+  const sel = shapes.find(s => s.id === selectedId);
+  if (!sel) return;
+
+  const edges = {
+    left: sel.x,
+    right: sel.x + sel.w,
+    top: sel.y,
+    bottom: sel.y + sel.h
+  };
+
+  // Distance to room walls
+  const wallDists = [
+    { label: 'L wall', val: edges.left, x1: 0, y1: sel.y + sel.h/2, x2: edges.left, y2: sel.y + sel.h/2 },
+    { label: 'R wall', val: roomW - edges.right, x1: edges.right, y1: sel.y + sel.h/2, x2: roomW, y2: sel.y + sel.h/2 },
+    { label: 'T wall', val: edges.top, x1: sel.x + sel.w/2, y1: 0, x2: sel.x + sel.w/2, y2: edges.top },
+    { label: 'B wall', val: roomH - edges.bottom, x1: sel.x + sel.w/2, y1: edges.bottom, x2: sel.x + sel.w/2, y2: roomH },
+  ];
+
+  ctx.strokeStyle = 'rgba(233,69,96,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.fillStyle = 'rgba(233,69,96,0.85)';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+
+  wallDists.forEach(d => {
+    if (d.val > 0.01) {
+      const px1 = ftToX(d.x1), py1 = ftToY(d.y1);
+      const px2 = ftToX(d.x2), py2 = ftToY(d.y2);
+      ctx.beginPath(); ctx.moveTo(px1, py1); ctx.lineTo(px2, py2); ctx.stroke();
+      ctx.fillText(d.val.toFixed(1) + "'", (px1+px2)/2, (py1+py2)/2 - 5);
+    }
+  });
+
+  // Distance to nearest shapes
+  shapes.forEach(other => {
+    if (other.id === selectedId) return;
+    // Horizontal gap
+    const hGap = getGap(sel, other);
+    const vGap = getVGap(sel, other);
+
+    if (hGap !== null && hGap.dist > 0 && hGap.dist < 20) {
+      const py = ftToY((Math.max(sel.y, other.y) + Math.min(sel.y+sel.h, other.y+other.h)) / 2);
+      const px1 = ftToX(hGap.x1), px2 = ftToX(hGap.x2);
+      ctx.beginPath(); ctx.moveTo(px1, py); ctx.lineTo(px2, py); ctx.stroke();
+      ctx.fillText(hGap.dist.toFixed(1) + "'", (px1+px2)/2, py - 5);
+    }
+    if (vGap !== null && vGap.dist > 0 && vGap.dist < 20) {
+      const px = ftToX((Math.max(sel.x, other.x) + Math.min(sel.x+sel.w, other.x+other.w)) / 2);
+      const py1 = ftToY(vGap.y1), py2 = ftToY(vGap.y2);
+      ctx.beginPath(); ctx.moveTo(px, py1); ctx.lineTo(px, py2); ctx.stroke();
+      ctx.fillText(vGap.dist.toFixed(1) + "'", px + 15, (py1+py2)/2);
+    }
+  });
+
+  ctx.setLineDash([]);
+}
+
+function getGap(a, b) {
+  // Vertical overlap required
+  if (a.y + a.h <= b.y || b.y + b.h <= a.y) return null;
+  if (a.x + a.w <= b.x) return { dist: b.x - (a.x + a.w), x1: a.x + a.w, x2: b.x };
+  if (b.x + b.w <= a.x) return { dist: a.x - (b.x + b.w), x1: b.x + b.w, x2: a.x };
+  return null;
+}
+
+function getVGap(a, b) {
+  if (a.x + a.w <= b.x || b.x + b.w <= a.x) return null;
+  if (a.y + a.h <= b.y) return { dist: b.y - (a.y + a.h), y1: a.y + a.h, y2: b.y };
+  if (b.y + b.h <= a.y) return { dist: a.y - (b.y + b.h), y1: b.y + b.h, y2: a.y };
+  return null;
+}
+
+// Interaction
+function getMouseFt(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: xToFt(e.clientX - rect.left), y: yToFt(e.clientY - rect.top) };
+}
+
+function hitTest(ft) {
+  // Reverse order so topmost shape is picked first
+  for (let i = shapes.length - 1; i >= 0; i--) {
+    const s = shapes[i];
+    if (ft.x >= s.x && ft.x <= s.x + s.w && ft.y >= s.y && ft.y <= s.y + s.h) return s;
+  }
+  return null;
+}
+
+function hitHandle(ft) {
+  if (!selectedId) return null;
+  const s = shapes.find(sh => sh.id === selectedId);
+  if (!s) return null;
+  const tol = 8 / pxPerFt;
+  const corners = [
+    { cx: s.x, cy: s.y, handle: 'tl' },
+    { cx: s.x + s.w, cy: s.y, handle: 'tr' },
+    { cx: s.x, cy: s.y + s.h, handle: 'bl' },
+    { cx: s.x + s.w, cy: s.y + s.h, handle: 'br' },
+  ];
+  for (const c of corners) {
+    if (Math.abs(ft.x - c.cx) < tol && Math.abs(ft.y - c.cy) < tol) return c.handle;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const ft = getMouseFt(e);
+
+  if (currentTool === 'measure') {
+    measureStart = { x: snapFt(ft.x), y: snapFt(ft.y) };
+    measureEnd = null;
+    return;
+  }
+
+  // Check resize handle first
+  const handle = hitHandle(ft);
+  if (handle) {
+    const s = shapes.find(sh => sh.id === selectedId);
+    dragState = { type: 'resize', handle, shape: s, origX: s.x, origY: s.y, origW: s.w, origH: s.h, startFt: ft };
+    return;
+  }
+
+  const hit = hitTest(ft);
+  if (hit) {
+    selectShape(hit.id);
+    dragState = { type: 'move', shape: hit, startFt: ft, origX: hit.x, origY: hit.y };
+  } else {
+    selectShape(null);
+  }
+  draw();
+});
+
+canvas.addEventListener('mousemove', e => {
+  const ft = getMouseFt(e);
+  document.getElementById('info-cursor').textContent = 'Cursor: ' + ft.x.toFixed(1) + ', ' + ft.y.toFixed(1) + ' ft';
+
+  if (currentTool === 'measure' && measureStart && e.buttons === 1) {
+    measureEnd = { x: snapFt(ft.x), y: snapFt(ft.y) };
+    draw();
+    return;
+  }
+
+  if (!dragState) {
+    // Update cursor
+    const handle = hitHandle(ft);
+    if (handle) {
+      canvas.style.cursor = (handle === 'tl' || handle === 'br') ? 'nwse-resize' : 'nesw-resize';
+    } else if (hitTest(ft)) {
+      canvas.style.cursor = 'move';
+    } else {
+      canvas.style.cursor = currentTool === 'measure' ? 'crosshair' : 'default';
+    }
+    return;
+  }
+
+  const dx = ft.x - dragState.startFt.x;
+  const dy = ft.y - dragState.startFt.y;
+
+  if (dragState.type === 'move') {
+    dragState.shape.x = snapFt(dragState.origX + dx);
+    dragState.shape.y = snapFt(dragState.origY + dy);
+    updateSpacingInfo(dragState.shape);
+  } else if (dragState.type === 'resize') {
+    const s = dragState.shape;
+    const h = dragState.handle;
+    let nx = dragState.origX, ny = dragState.origY, nw = dragState.origW, nh = dragState.origH;
+
+    if (h.includes('r')) { nw = Math.max(0.25, snapFt(dragState.origW + dx)); }
+    if (h.includes('l')) { nx = snapFt(dragState.origX + dx); nw = Math.max(0.25, dragState.origW - (nx - dragState.origX)); }
+    if (h.includes('b')) { nh = Math.max(0.25, snapFt(dragState.origH + dy)); }
+    if (h.includes('t')) { ny = snapFt(dragState.origY + dy); nh = Math.max(0.25, dragState.origH - (ny - dragState.origY)); }
+
+    s.x = nx; s.y = ny; s.w = nw; s.h = nh;
+  }
+
+  draw();
+  updateSelectionPanel();
+});
+
+canvas.addEventListener('mouseup', () => {
+  dragState = null;
+});
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const ft = getMouseFt(e);
+  const oldPx = pxPerFt;
+  if (e.deltaY < 0) pxPerFt = Math.min(200, pxPerFt * 1.1);
+  else pxPerFt = Math.max(5, pxPerFt / 1.1);
+
+  // Zoom toward cursor
+  offsetX = e.offsetX - ft.x * pxPerFt;
+  offsetY = e.offsetY - ft.y * pxPerFt;
+
+  document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt / 50 * 100) + '%';
+  draw();
+}, { passive: false });
+
+// Pan with middle mouse or shift+drag
+let panState = null;
+canvas.addEventListener('mousedown', e => {
+  if (e.button === 1 || (e.button === 0 && e.shiftKey && currentTool === 'select' && !hitTest(getMouseFt(e)))) {
+    e.preventDefault();
+    panState = { startX: e.offsetX, startY: e.offsetY, origOX: offsetX, origOY: offsetY };
+  }
+});
+canvas.addEventListener('mousemove', e => {
+  if (panState && e.buttons) {
+    offsetX = panState.origOX + (e.offsetX - panState.startX);
+    offsetY = panState.origOY + (e.offsetY - panState.startY);
+    draw();
+  }
+});
+canvas.addEventListener('mouseup', () => { panState = null; });
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'Delete' || e.key === 'Backspace') deleteSelected();
+  if (e.key === 'r') rotateSelected();
+  if (e.key === 'd' && e.ctrlKey) { e.preventDefault(); duplicateSelected(); }
+  if (e.key === 'Escape') { selectShape(null); measureStart = null; measureEnd = null; draw(); }
+  // Arrow nudge
+  if (selectedId && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+    e.preventDefault();
+    const s = shapes.find(sh => sh.id === selectedId);
+    const step = e.shiftKey ? 1 : 0.25;
+    if (e.key === 'ArrowLeft') s.x -= step;
+    if (e.key === 'ArrowRight') s.x += step;
+    if (e.key === 'ArrowUp') s.y -= step;
+    if (e.key === 'ArrowDown') s.y += step;
+    draw();
+    updateSelectionPanel();
+  }
+});
+
+// Functions
+function addShape() {
+  const name = document.getElementById('shape-name').value || 'Shape';
+  const w = parseFloat(document.getElementById('shape-w').value) || 2;
+  const h = parseFloat(document.getElementById('shape-h').value) || 2;
+  const shape = { id: nextId++, name, w, h, x: 1, y: 1, color: currentColor };
+  shapes.push(shape);
+  selectShape(shape.id);
+  updateShapeList();
+  draw();
+}
+
+function addPreset(name, w, h) {
+  const shape = { id: nextId++, name, w, h, x: 1, y: 1, color: currentColor };
+  shapes.push(shape);
+  selectShape(shape.id);
+  updateShapeList();
+  draw();
+}
+
+function selectShape(id) {
+  selectedId = id;
+  const panel = document.getElementById('selection-panel');
+  if (id) {
+    panel.style.display = '';
+    updateSelectionPanel();
+  } else {
+    panel.style.display = 'none';
+  }
+  updateShapeList();
+  draw();
+}
+
+function updateSelectionPanel() {
+  const s = shapes.find(sh => sh.id === selectedId);
+  if (!s) return;
+  document.getElementById('sel-name').value = s.name;
+  document.getElementById('sel-w').value = s.w;
+  document.getElementById('sel-h').value = s.h;
+  document.getElementById('sel-x').value = s.x;
+  document.getElementById('sel-y').value = s.y;
+}
+
+function applySelection() {
+  const s = shapes.find(sh => sh.id === selectedId);
+  if (!s) return;
+  s.name = document.getElementById('sel-name').value;
+  s.w = parseFloat(document.getElementById('sel-w').value) || s.w;
+  s.h = parseFloat(document.getElementById('sel-h').value) || s.h;
+  s.x = parseFloat(document.getElementById('sel-x').value);
+  s.y = parseFloat(document.getElementById('sel-y').value);
+  updateShapeList();
+  draw();
+}
+
+function rotateSelected() {
+  const s = shapes.find(sh => sh.id === selectedId);
+  if (!s) return;
+  const tmp = s.w; s.w = s.h; s.h = tmp;
+  updateSelectionPanel();
+  updateShapeList();
+  draw();
+}
+
+function duplicateSelected() {
+  const s = shapes.find(sh => sh.id === selectedId);
+  if (!s) return;
+  const dup = { ...s, id: nextId++, x: s.x + 0.5, y: s.y + 0.5 };
+  shapes.push(dup);
+  selectShape(dup.id);
+  updateShapeList();
+  draw();
+}
+
+function deleteSelected() {
+  if (!selectedId) return;
+  shapes = shapes.filter(s => s.id !== selectedId);
+  selectShape(null);
+  updateShapeList();
+  draw();
+}
+
+function applyRoom() {
+  roomW = parseFloat(document.getElementById('room-w').value) || 15;
+  roomH = parseFloat(document.getElementById('room-h').value) || 12;
+  draw();
+}
+
+function setTool(tool) {
+  currentTool = tool;
+  document.getElementById('tool-select').classList.toggle('active', tool === 'select');
+  document.getElementById('tool-measure').classList.toggle('active', tool === 'measure');
+  canvas.style.cursor = tool === 'measure' ? 'crosshair' : 'default';
+  if (tool === 'select') { measureStart = null; measureEnd = null; draw(); }
+}
+
+function toggleSnap() {
+  snapOn = !snapOn;
+  document.getElementById('snap-btn').textContent = 'Snap: ' + (snapOn ? 'ON' : 'OFF');
+}
+
+function toggleLabels() {
+  showLabels = !showLabels;
+  document.getElementById('labels-btn').textContent = 'Labels: ' + (showLabels ? 'ON' : 'OFF');
+  draw();
+}
+
+function zoomIn() { pxPerFt = Math.min(200, pxPerFt * 1.3); document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt/50*100) + '%'; draw(); }
+function zoomOut() { pxPerFt = Math.max(5, pxPerFt / 1.3); document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt/50*100) + '%'; draw(); }
+function zoomFit() {
+  const padPx = 80;
+  const availW = canvas.width - padPx * 2;
+  const availH = canvas.height - padPx * 2;
+  pxPerFt = Math.min(availW / roomW, availH / roomH);
+  offsetX = (canvas.width - roomW * pxPerFt) / 2;
+  offsetY = (canvas.height - roomH * pxPerFt) / 2;
+  document.getElementById('info-zoom').textContent = 'Zoom: ' + Math.round(pxPerFt/50*100) + '%';
+  draw();
+}
+
+function clearAll() {
+  if (!confirm('Clear all shapes?')) return;
+  shapes = [];
+  selectedId = null;
+  updateShapeList();
+  draw();
+}
+
+function exportImage() {
+  // Draw at current state, then export
+  const link = document.createElement('a');
+  link.download = 'blueprint.png';
+  link.href = canvas.toDataURL();
+  link.click();
+}
+
+function updateShapeList() {
+  const list = document.getElementById('shape-list');
+  list.innerHTML = '';
+  shapes.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'shape-item' + (s.id === selectedId ? ' selected' : '');
+    el.innerHTML = `<div><span class="name" style="color:${s.color}">${s.name}</span> <span class="dims">${s.w}×${s.h} ft</span></div>`;
+    el.onclick = () => { selectShape(s.id); draw(); };
+    list.appendChild(el);
+  });
+}
+
+function updateSpacingInfo(s) {
+  const left = s.x.toFixed(1);
+  const right = (roomW - s.x - s.w).toFixed(1);
+  const top = s.y.toFixed(1);
+  const bottom = (roomH - s.y - s.h).toFixed(1);
+  document.getElementById('info-spacing').textContent =
+    `Spacing — L:${left}' R:${right}' T:${top}' B:${bottom}'`;
+}
+
+// Init
+resize();
+zoomFit();
+</script>
+</body>
+</html>
