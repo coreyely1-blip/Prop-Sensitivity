@@ -10,3 +10,8 @@ dist/
 build/
 .venv/
 venv/
+
+# Fantasy Trade Analyzer (React/Vite)
+fantasy-trade-analyzer/node_modules/
+fantasy-trade-analyzer/dist/
+fantasy-trade-analyzer/.vite/
